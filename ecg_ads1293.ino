@@ -1,6 +1,6 @@
 /*
 
-   Simplest 3-Lead 24-bit ECG with an ads1293 and esp32
+  Simplest 3-Lead 24-bit ECG with an ads1293 and esp32
 
   SPI conection:
 
@@ -32,10 +32,11 @@ void setup()
   pinMode(pin_ALARMB, INPUT);
   pinMode(pin_SS, OUTPUT);
 
-  Serial.begin(115200); // (less than 115200 will decimate the signal -> de facto LPF)
+  Serial.begin(115200);
 
+  //option 1: use hspi specific spi channel
   hspi.begin(pin_SCLK, pin_MISO, pin_MOSI, pin_SS);
-  //////
+  //option 2: use default spi class methods
   // SPI.begin(pin_SCLK, pin_MISO, pin_MOSI, pin_SS);
 
   setup_ECG();
@@ -54,10 +55,21 @@ void loop()
   {
     int32_t ecgVal;
 
-    // sampled data is located at 3 8-bit registers
+    // sampled data is located at 3 8-bit
+    //--CHANNEL 1
     byte x1 = readRegister(0x37);
     byte x2 = readRegister(0x38);
     byte x3 = readRegister(0x39);
+
+    //--CHANNEL 2
+    //0x3A
+    //0x3B
+    //0x3C
+
+    //--CHANNEL 3
+    //0x3D
+    //0x3E
+    //0x3F
 
     // 3 8-bit registers combination on a 24 bit number
     ecgVal = x1;
@@ -72,7 +84,6 @@ void loop()
 
     Serial.println(ecgTmp - ecgTmp2);
   }
-  Serial.println(readRegister(0x21));
 }
 
 void setup_ECG()
@@ -103,11 +114,9 @@ void setup_ECG()
   writeRegister(0x2F, 0x30);
   //12. Set address 0x00 = 0x01: Starts data conversion.
   writeRegister(0x00, 0x01);
-  // // Set Lead off detection off all inputs
-  // writeRegister(0x07, 0x02);
 }
 
-//===========SPECIALIZED SPI
+//===========SPECIALIZED SPI OPTION 1
 byte readRegister(byte reg)
 {
   byte data;
@@ -133,7 +142,7 @@ void writeRegister(byte reg, byte data)
 }
 //===========SPECIALIZED SPI
 
-//===========GENERIC SPI
+//===========GENERIC SPI: OPTION 2
 // byte readRegister(byte reg)
 // {
 //   byte data;
