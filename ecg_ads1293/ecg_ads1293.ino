@@ -14,6 +14,9 @@
 
 */
 
+// #include "Plotter.h"
+// Plotter p;
+
 #include <SPI.h>
 
 SPIClass hspi(HSPI);
@@ -25,6 +28,48 @@ const int pin_MISO = 12;  // MISO
 const int pin_MOSI = 13;  // MOSI
 const int pin_SCLK = 14;  // SCLK
 const int pin_SS = 15;    // CSB
+
+int32_t c1;
+int32_t c2;
+int32_t c3;
+
+double cd1;
+double cd2;
+double cd3;
+
+int32_t getValFromChannel(int channel)
+{
+  byte x1;
+  byte x2;
+  byte x3;
+
+  switch (channel)
+  {
+  case 1:
+    x1 = 0x37;
+    x2 = 0x38;
+    x3 = 0x39;
+    break;
+  case 2:
+    x1 = 0x3A;
+    x2 = 0x3B;
+    x3 = 0x3C;
+    break;
+  case 3:
+    x1 = 0x3D;
+    x2 = 0x3E;
+    x3 = 0x3F;
+    break;
+  }
+  int32_t val;
+
+  // 3 8-bit registers combination on a 24 bit number
+  val = readRegister(x1);
+  val = (val << 8) | readRegister(x2);
+  val = (val << 8) | readRegister(x3);
+
+  return val;
+}
 
 void setup()
 {
@@ -40,50 +85,41 @@ void setup()
   // SPI.begin(pin_SCLK, pin_MISO, pin_MOSI, pin_SS);
 
   setup_ECG();
-}
 
-int32_t ecgTmp = 0;
-int32_t ecgTmp2 = 0;
+  // p.Begin();
+  // p.AddTimeGraph("3 channel graph", 1000, "c1 label", cd1, "c2 label", cd2, "c3 label", cd3);
+}
 
 void loop()
 {
-  if (digitalRead(pin_ALARMB) == false)
-  {
-    Serial.println("alarm raised");
-  }
-  if (digitalRead(pin_DRDYB) == false)
-  {
-    int32_t ecgVal;
+  // if (digitalRead(pin_ALARMB) == false)
+  // {
+  //   Serial.println("alarm raised");
+  // }
+  // if (digitalRead(pin_DRDYB) == false)
+  // {
 
-    // sampled data is located at 3 8-bit
-    //--CHANNEL 1
-    byte x1 = readRegister(0x37);
-    byte x2 = readRegister(0x38);
-    byte x3 = readRegister(0x39);
+  // sampled data is located at 3 8-bit
+  //--CHANNEL 1
+  c1 = getValFromChannel(1);
+  // cd1 = (double)c1;
+  Serial.print(c1);
 
-    //--CHANNEL 2
-    //0x3A
-    //0x3B
-    //0x3C
+  Serial.print(",");
+  //--CHANNEL 2
+  c2 = getValFromChannel(2);
+  // cd2 = (double)c2;
+  Serial.print(c2);
 
-    //--CHANNEL 3
-    //0x3D
-    //0x3E
-    //0x3F
+  Serial.print(",");
+  //--CHANNEL 3
+  c3 = getValFromChannel(3);
+  // cd3 = (double)c3;
+  Serial.println(c3);
 
-    // 3 8-bit registers combination on a 24 bit number
-    ecgVal = x1;
-    ecgVal = (ecgVal << 8) | x2;
-    ecgVal = (ecgVal << 8) | x3;
-
-    // exponential smoothing as LPF
-    //    1) short range smoothing
-    ecgTmp = ecgTmp * .5 + ecgVal * .5;
-    //    2) Baseline
-    ecgTmp2 = ecgTmp2 * .90 + ecgVal * .10;
-
-    Serial.println(ecgTmp - ecgTmp2);
-  }
+  // p.Plot();
+  // }
+  delay(20); //20ms delay
 }
 
 void setup_ECG()
@@ -141,24 +177,3 @@ void writeRegister(byte reg, byte data)
   hspi.endTransaction();
 }
 //===========SPECIALIZED SPI
-
-//===========GENERIC SPI: OPTION 2
-// byte readRegister(byte reg)
-// {
-//   byte data;
-//   reg |= 1 << 7;
-//   digitalWrite(pin_SS, LOW);
-//   SPI.transfer(reg);
-//   data = SPI.transfer(0);
-//   digitalWrite(pin_SS, HIGH);
-//   return data;
-// }
-// void writeRegister(byte reg, byte data)
-// {
-//   reg &= ~(1 << 7);
-//   digitalWrite(pin_SS, LOW);
-//   SPI.transfer(reg);
-//   SPI.transfer(data);
-//   digitalWrite(pin_SS, HIGH);
-// }
-//===========GENERIC SPI
