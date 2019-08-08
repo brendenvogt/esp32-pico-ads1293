@@ -71,6 +71,105 @@ int32_t getValFromChannel(int channel)
   return val;
 }
 
+void setup_ECG_2_channel()
+{
+  // datasheet ads1293
+  //Follow the next steps to configure the device for this example, starting from default registers values.
+  //1. Set address 0x01 = 0x11: Connect channel 1’s INP to IN2 and INN to IN1.
+  writeRegister(0x01, 0x11);
+  //2. Set address 0x02 = 0x19: Connect channel 2’s INP to IN3 and INN to IN1.
+  writeRegister(0x02, 0x19);
+  //3. Set address 0x0A = 0x07: Enable the common-mode detector on input pins IN1, IN2 and IN3.
+  writeRegister(0x0A, 0x07);
+  //4. Set address 0x0C = 0x04: Connect the output of the RLD amplifier internally to pin IN4.
+  writeRegister(0x0C, 0x04);
+  //5. Set address 0x12 = 0x04: Use external crystal and feed the internal oscillator's output to the digital.
+  writeRegister(0x12, 0x04);
+  //6. Set address 0x14 = 0x24: Shuts down unused channel 3’s signal path.
+  writeRegister(0x14, 0x24);
+  //7. Set address 0x21 = 0x02: Configures the R2 decimation rate as 5 for all channels.
+  writeRegister(0x21, 0x02);
+  //8. Set address 0x22 = 0x02: Configures the R3 decimation rate as 6 for channel 1.
+  writeRegister(0x22, 0x02);
+  //9. Set address 0x23 = 0x02: Configures the R3 decimation rate as 6 for channel 2.
+  writeRegister(0x23, 0x02);
+  //10. Set address 0x27 = 0x08: Configures the DRDYB source to channel 1 ECG (or fastest channel).
+  writeRegister(0x27, 0x08);
+  //11. Set address 0x2F = 0x30: Enables channel 1 ECG and channel 2 ECG for loop read-back mode.
+  writeRegister(0x2F, 0x30);
+  //12. Set address 0x00 = 0x01: Starts data conversion.
+  writeRegister(0x00, 0x01);
+}
+
+void setup_ECG_3_channel()
+{
+  // datasheet ads1293
+  //Follow the next steps to configure the device for this example, starting from default registers values.
+  //1. Set address 0x01 = 0x11: Connect channel 1’s INP to IN2 and INN to IN1.
+  writeRegister(0x01, 0x11);
+  //2. Set address 0x02 = 0x19: Connect channel 2’s INP to IN3 and INN to IN1.
+  writeRegister(0x02, 0x19);
+
+  writeRegister(0x03, 0x2E); //diff
+
+  //3. Set address 0x0A = 0x07: Enable the common-mode detector on input pins IN1, IN2 and IN3.
+  writeRegister(0x0A, 0x07);
+  //4. Set address 0x0C = 0x04: Connect the output of the RLD amplifier internally to pin IN4.
+  writeRegister(0x0C, 0x04);
+
+  writeRegister(0x0D, 0x01); //diff
+  writeRegister(0x0E, 0x02); //diff
+  writeRegister(0x0F, 0x03); //diff
+
+  writeRegister(0x10, 0x01); //diff
+
+  //5. Set address 0x12 = 0x04: Use external crystal and feed the internal oscillator's output to the digital.
+  writeRegister(0x12, 0x04);
+  // //6. Set address 0x14 = 0x24: Shuts down unused channel 3’s signal path.
+  // writeRegister(0x14, 0x24);
+  //7. Set address 0x21 = 0x02: Configures the R2 decimation rate as 5 for all channels.
+  writeRegister(0x21, 0x02);
+  //8. Set address 0x22 = 0x02: Configures the R3 decimation rate as 6 for channel 1.
+  writeRegister(0x22, 0x02);
+  //9. Set address 0x23 = 0x02: Configures the R3 decimation rate as 6 for channel 2.
+  writeRegister(0x23, 0x02);
+
+  writeRegister(0x24, 0x02); //diff
+
+  //10. Set address 0x27 = 0x08: Configures the DRDYB source to channel 1 ECG (or fastest channel).
+  writeRegister(0x27, 0x08);
+  //11. Set address 0x2F = 0x30: Enables channel 1 ECG and channel 2 ECG for loop read-back mode.
+  writeRegister(0x2F, 0x70); //diff
+  //12. Set address 0x00 = 0x01: Starts data conversion.
+  writeRegister(0x00, 0x01);
+}
+
+//===========SPECIALIZED SPI OPTION 1
+byte readRegister(byte reg)
+{
+  byte data;
+  reg |= 1 << 7;
+  hspi.beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
+  digitalWrite(pin_SS, LOW);
+  hspi.transfer(reg);
+  data = hspi.transfer(0);
+  digitalWrite(pin_SS, HIGH);
+  hspi.endTransaction();
+  return data;
+}
+
+void writeRegister(byte reg, byte data)
+{
+  reg &= ~(1 << 7);
+  hspi.beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
+  digitalWrite(pin_SS, LOW);
+  hspi.transfer(reg);
+  hspi.transfer(data);
+  digitalWrite(pin_SS, HIGH);
+  hspi.endTransaction();
+}
+//===========SPECIALIZED SPI
+
 void setup()
 {
   pinMode(pin_DRDYB, INPUT);
@@ -84,7 +183,7 @@ void setup()
   //option 2: use default spi class methods
   // SPI.begin(pin_SCLK, pin_MISO, pin_MOSI, pin_SS);
 
-  setup_ECG();
+  setup_ECG_3_channel();
 
   // p.Begin();
   // p.AddTimeGraph("3 channel graph", 1000, "c1 label", cd1, "c2 label", cd2, "c3 label", cd3);
@@ -121,59 +220,3 @@ void loop()
   // }
   delay(20); //20ms delay
 }
-
-void setup_ECG()
-{
-  // datasheet ads1293
-  //Follow the next steps to configure the device for this example, starting from default registers values.
-  //1. Set address 0x01 = 0x11: Connect channel 1’s INP to IN2 and INN to IN1.
-  writeRegister(0x01, 0x11);
-  //2. Set address 0x02 = 0x19: Connect channel 2’s INP to IN3 and INN to IN1.
-  writeRegister(0x02, 0x19);
-  //3. Set address 0x0A = 0x07: Enable the common-mode detector on input pins IN1, IN2 and IN3.
-  writeRegister(0x0A, 0x07);
-  //4. Set address 0x0C = 0x04: Connect the output of the RLD amplifier internally to pin IN4.
-  writeRegister(0x0C, 0x04);
-  //5. Set address 0x12 = 0x04: Use external crystal and feed the internal oscillator's output to the digital.
-  writeRegister(0x12, 0x04);
-  //6. Set address 0x14 = 0x24: Shuts down unused channel 3’s signal path.
-  writeRegister(0x14, 0x24);
-  //7. Set address 0x21 = 0x02: Configures the R2 decimation rate as 5 for all channels.
-  writeRegister(0x21, 0x02);
-  //8. Set address 0x22 = 0x02: Configures the R3 decimation rate as 6 for channel 1.
-  writeRegister(0x22, 0x02);
-  //9. Set address 0x23 = 0x02: Configures the R3 decimation rate as 6 for channel 2.
-  writeRegister(0x23, 0x02);
-  //10. Set address 0x27 = 0x08: Configures the DRDYB source to channel 1 ECG (or fastest channel).
-  writeRegister(0x27, 0x08);
-  //11. Set address 0x2F = 0x30: Enables channel 1 ECG and channel 2 ECG for loop read-back mode.
-  writeRegister(0x2F, 0x30);
-  //12. Set address 0x00 = 0x01: Starts data conversion.
-  writeRegister(0x00, 0x01);
-}
-
-//===========SPECIALIZED SPI OPTION 1
-byte readRegister(byte reg)
-{
-  byte data;
-  reg |= 1 << 7;
-  hspi.beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
-  digitalWrite(pin_SS, LOW);
-  hspi.transfer(reg);
-  data = hspi.transfer(0);
-  digitalWrite(pin_SS, HIGH);
-  hspi.endTransaction();
-  return data;
-}
-
-void writeRegister(byte reg, byte data)
-{
-  reg &= ~(1 << 7);
-  hspi.beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
-  digitalWrite(pin_SS, LOW);
-  hspi.transfer(reg);
-  hspi.transfer(data);
-  digitalWrite(pin_SS, HIGH);
-  hspi.endTransaction();
-}
-//===========SPECIALIZED SPI
