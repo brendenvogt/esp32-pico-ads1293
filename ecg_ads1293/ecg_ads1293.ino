@@ -144,6 +144,7 @@ void setup_ECG_3_channel()
   writeRegister(0x00, 0x01);
 }
 
+
 //===========SPECIALIZED SPI OPTION 1
 byte readRegister(byte reg)
 {
