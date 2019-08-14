@@ -144,7 +144,6 @@ void setup_ECG_3_channel()
   writeRegister(0x00, 0x01);
 }
 
-
 //===========SPECIALIZED SPI OPTION 1
 byte readRegister(byte reg)
 {
@@ -219,5 +218,5 @@ void loop()
 
   // p.Plot();
   // }
-  delay(20); //20ms delay
+  delay(5); //20ms delay
 }
